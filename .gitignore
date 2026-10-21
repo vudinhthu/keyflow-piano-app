@@ -1,0 +1,35 @@
+node_modules/
+dist/
+coverage/
+output/
+.playwright-cli/
+.env*
+!.env.example
+.DS_Store
+*.tsbuildinfo
+
+# Local planning, verification evidence and agent/editor configuration
+docs/
+documents/
+notes/
+attachments/
+.agents/
+.codex/
+.claude/
+.cursor/
+.windsurf/
+.vscode/
+.idea/
+.worktrees/
+.vercel/
+AGENTS.md
+AGENTS.override.md
+CLAUDE.md
+GEMINI.md
+.cursorrules
+.cursorignore
+.windsurfrules
+.mcp.json
+mcp.json
+
+# Public README and license/attribution files remain tracked.
