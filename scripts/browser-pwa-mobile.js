@@ -7,8 +7,16 @@ async page => {
   const dataReady = () => page.waitForFunction(() => document.querySelector('.offline-panel')?.dataset.sampleStatus === 'ready')
   await ready(); await dataReady()
   assert(await panel.getByRole('button', { name: /tải dữ liệu/i }).count() === 0, 'Download visible despite verified cache and prepared samples')
-  await page.setViewportSize({ width: 390, height: 844 })
   const popup = page.getByRole('dialog', { name: 'Xoay ngang màn hình' })
+  const resize = async size => {
+    const wasPortrait = await page.evaluate(() => matchMedia('(orientation: portrait) and (max-width: 900px)').matches)
+    await page.setViewportSize(size)
+    const isPortrait = size.width <= 900 && size.height >= size.width
+    // CDP viewport changes can precede matchMedia event delivery. Wait for the
+    // actual modal transition before querying roles in its otherwise inert background.
+    if (wasPortrait !== isPortrait) await popup.waitFor({ state: isPortrait ? 'visible' : 'hidden' })
+  }
+  await resize({ width: 390, height: 844 })
   const closePopup = page.getByRole('button', { name: 'Đóng lời nhắc xoay ngang' })
   await popup.waitFor({ state: 'visible' })
   assert(await popup.getByRole('button').count() === 1 && await closePopup.locator('svg').count() === 1, 'Popup must have only its X icon action')
@@ -18,15 +26,15 @@ async page => {
   await page.keyboard.press('Shift+Tab')
   assert(await closePopup.evaluate(button => button === document.activeElement), 'Popup did not contain reverse keyboard focus')
   await page.screenshot({ path: 'output/playwright/task505-portrait-popup.png' })
-  await page.setViewportSize({ width: 844, height: 390 })
+  await resize({ width: 844, height: 390 })
   await popup.waitFor({ state: 'hidden' })
-  await page.setViewportSize({ width: 390, height: 844 })
+  await resize({ width: 390, height: 844 })
   await popup.waitFor({ state: 'visible' })
   await closePopup.click()
   await popup.waitFor({ state: 'hidden' })
-  await page.setViewportSize({ width: 320, height: 844 })
+  await resize({ width: 320, height: 844 })
   assert(!await popup.isVisible(), 'Dismissed popup reopened within the same portrait session')
-  await page.setViewportSize({ width: 844, height: 390 })
+  await resize({ width: 844, height: 390 })
   const sampleRequests = []
   page.on('request', request => { if (request.url().endsWith('.mp3')) sampleRequests.push(request.url()) })
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -38,7 +46,7 @@ async page => {
   assert(await page.locator('.offline-panel').isHidden(), 'Verified data leaves a visible empty status panel')
   assert(!await page.getByText(/Sẵn sàng offline|Đang ngoại tuyến|Đã tải tiếng đàn/).count(), 'Removed readiness/network notice is still in the UI')
   for (const width of [320, 390, 844, 1440]) {
-    await page.setViewportSize({ width, height: width < 700 ? 844 : 800 })
+    await resize({ width, height: width < 700 ? 844 : 800 })
     if (await popup.isVisible()) await closePopup.click()
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `Page overflow at ${width}px`)
     const fullWidth = await page.evaluate(() => {
@@ -50,7 +58,7 @@ async page => {
   }
   await page.getByRole('heading', { name: 'Salamander Grand' }).click()
   await page.keyboard.down('z'); await page.keyboard.down('Space'); await page.keyboard.up('z')
-  await page.setViewportSize({ width: 390, height: 844 })
+  await resize({ width: 390, height: 844 })
   await popup.waitFor({ state: 'visible' })
   assert(await page.locator('button[data-note][aria-pressed=true], [data-sustained=true]').count() === 0, 'Opening popup left notes held/sustained')
   assert(await page.getByRole('button', { name: 'Sustain — giữ pedal', includeHidden: true }).getAttribute('aria-pressed') === 'false', 'Opening popup left pedal held')
@@ -59,7 +67,7 @@ async page => {
   assert(await page.locator('button[data-note][aria-pressed=true]').count() === 0, 'Popup keyboard interaction played notes')
   assert(await page.getByRole('group', { name: 'Octave', includeHidden: true }).textContent() === octaveBeforePopup, 'Popup keyboard interaction shifted octave')
   await page.keyboard.up('Space'); await page.keyboard.press('Escape'); await popup.waitFor({ state: 'hidden' })
-  await page.setViewportSize({ width: 1440, height: 800 })
+  await resize({ width: 1440, height: 800 })
   await page.locator('.orientation-popup').waitFor({ state: 'hidden' })
   const floating = page.getByRole('complementary', { name: 'Octave và Sustain nổi' })
   await floating.waitFor({ state: 'visible' })
@@ -90,7 +98,7 @@ async page => {
   assert(await pedal.getAttribute('aria-pressed') === 'false', 'Hamburger sustain stayed held after release')
   assert(Math.abs((await floating.boundingBox()).x - actionPosition.x) < 1, 'Action button dragged the wrapper')
   for (const width of [320, 390, 844]) {
-    await page.setViewportSize({ width, height: width < 700 ? 844 : 390 })
+    await resize({ width, height: width < 700 ? 844 : 390 })
     // CDP resizing returns before the window resize event on some runners.
     // Observe the completed clamp; the same edge bounds remain mandatory.
     await page.waitForFunction(width => {
@@ -104,7 +112,7 @@ async page => {
     const velocityBox = await page.locator('.velocity-control').boundingBox()
     assert(volumeBox.x + volumeBox.width <= velocityBox.x + 1 && Math.max(volumeBox.y, velocityBox.y) < Math.min(volumeBox.y + volumeBox.height, velocityBox.y + velocityBox.height), 'Velocity no longer sits beside volume')
   }
-  await page.setViewportSize({ width: 1440, height: 800 })
+  await resize({ width: 1440, height: 800 })
   await page.locator('.orientation-popup').waitFor({ state: 'hidden' })
   const slider = page.getByRole('slider', { name: 'Âm lượng' })
   await slider.focus(); await page.keyboard.press('Home')
