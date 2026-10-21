@@ -4,7 +4,9 @@
 
 **[Play piano in your browser →](https://key-flow-piano.vercel.app)**
 
-KeyFlow Piano is a personal **vibe-coded project**, developed with AI assistance when writing and revising code. It is shared free of charge for learning, experimentation and the enjoyment of making music, **with no commercial or profit-making purpose**.
+KeyFlow Piano brings sampled grand piano sound to the browser, playable with a QWERTY keyboard, mouse or touch, with PWA installation support.
+
+It is a personal **vibe-coded project**, with **AI taking the primary role in code implementation**. It is shared free of charge for learning, experimentation and the enjoyment of making music, **with no commercial or profit-making purpose**.
 
 ## Features
 
@@ -13,6 +15,11 @@ KeyFlow Piano is a personal **vibe-coded project**, developed with AI assistance
 - Volume, octave, sustain and velocity controls, with device-local preferences.
 - A PWA with integrity-verified offline data and updates initiated by the user.
 - Draggable controls and a landscape reminder on small screens.
+
+## Screenshots
+
+- **Desktop — piano keyboard and controls:** _Screenshot pending._
+- **Mobile — landscape playing area:** _Screenshot pending._
 
 ## Start playing
 
@@ -28,6 +35,25 @@ KeyFlow Piano is a personal **vibe-coded project**, developed with AI assistance
 Use **↑/↓** to shift octave; hold **Space** for sustain in the playing area. Labels follow the current octave. Mapping uses physical key positions, so printed characters can differ on non-QWERTY layouts. Simultaneous key detection also depends on keyboard hardware.
 
 The PWA needs a network connection for the first complete download. Offline playing is available only after the current build's required data is cached. Installation and browser support depend on the platform; audible latency and compatibility with every browser have not been qualified.
+
+## Tech Stack
+
+| Area | Technology |
+| --- | --- |
+| Interface & state | React, TypeScript, Tailwind CSS, Zustand |
+| Audio | Tone.js, Web Audio API, Salamander Grand Piano samples |
+| PWA & caching | vite-plugin-pwa, Workbox, Service Worker, Cache API |
+| Development tools | Vite, pnpm, ESLint |
+| Testing | Vitest, Playwright CLI |
+
+## Architecture
+
+Keyboard and pointer events call the audio engine directly; React renders the resulting state.
+
+- **Interface & input:** [components](src/components/) and [keyboard](src/features/keyboard/) handle piano keys, controls and physical QWERTY position mapping.
+- **Audio:** [audio](src/features/audio/) verifies sample SHA-256 hashes, decodes audio and plays it through `Tone.Sampler`; `VoiceManager` tracks note owners and sustain.
+- **State & preferences:** [stores](src/stores/) use Zustand; [settings](src/features/settings/) persist volume, octave and velocity in `localStorage`.
+- **PWA:** the [service worker](src/sw.ts) and [offline](src/features/offline/) modules verify the app/sample cache and coordinate user-initiated updates while the piano is idle.
 
 ## Run locally
 
@@ -90,3 +116,7 @@ Transitive audio/worker dependencies and original notices for distributed compon
 **Audio:** [Salamander Grand Piano](https://github.com/sfzinstruments/SalamanderGrandPiano) by **Alexander Holm**, under **CC BY 3.0**; web MP3 edition from [Tone.js audio](https://github.com/Tonejs/audio/tree/master/salamander). The project uses 21 MP3 files unchanged from that web edition, with one dynamic layer; other pitches use pitch shifting. Thank you to Alexander Holm and the Tone.js community. See the [detailed attribution and sources](public/samples/salamander/ATTRIBUTION.md).
 
 The nonprofit purpose describes how the author runs this project; each third-party component retains its own license and rights. Credits do not imply endorsement by the library or recording authors.
+
+## Source-code licensing status
+
+The repository currently has no separate license for the application's source code. [`"private": true`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#private) in `package.json` only prevents npm publication; it is not a license and does not control GitHub repository visibility. Free, noncommercial intent does not replace a [source-code license](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository). Libraries, icons and samples retain their separate licenses, as credited above.
