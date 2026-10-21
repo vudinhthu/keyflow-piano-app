@@ -8,6 +8,7 @@ async page => {
   await ready(); await dataReady()
   assert(await panel.getByRole('button', { name: /tải dữ liệu/i }).count() === 0, 'Download visible despite verified cache and prepared samples')
   const popup = page.getByRole('dialog', { name: 'Xoay ngang màn hình' })
+  const settleViewport = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const resize = async size => {
     const isPortrait = size.width <= 900 && size.height >= size.width
     const changed = await page.evaluate(expected => {
@@ -21,10 +22,18 @@ async page => {
     // A dismissed dialog is already hidden when rotating to landscape. Observe
     // the media event itself, so that transition completes before another resize.
     await page.waitForFunction(() => window.__pianoOrientationObserved)
+    // Different MediaQueryList objects can dispatch in different order. Two frames
+    // also let the application's listener and the modal accessibility tree settle.
+    await settleViewport()
     if (changed) await popup.waitFor({ state: isPortrait ? 'visible' : 'hidden' })
   }
   await resize({ width: 390, height: 844 })
   const closePopup = page.getByRole('button', { name: 'Đóng lời nhắc xoay ngang' })
+  const dismissPopup = async () => {
+    await closePopup.click()
+    await popup.waitFor({ state: 'hidden' })
+    await settleViewport()
+  }
   await popup.waitFor({ state: 'visible' })
   assert(await popup.getByRole('button').count() === 1 && await closePopup.locator('svg').count() === 1, 'Popup must have only its X icon action')
   assert(await closePopup.evaluate(button => button === document.activeElement), 'Popup did not focus its dismissal button')
@@ -37,7 +46,7 @@ async page => {
   await popup.waitFor({ state: 'hidden' })
   await resize({ width: 390, height: 844 })
   await popup.waitFor({ state: 'visible' })
-  await closePopup.click()
+  await dismissPopup()
   await popup.waitFor({ state: 'hidden' })
   await resize({ width: 320, height: 844 })
   assert(!await popup.isVisible(), 'Dismissed popup reopened within the same portrait session')
@@ -54,7 +63,7 @@ async page => {
   assert(!await page.getByText(/Sẵn sàng offline|Đang ngoại tuyến|Đã tải tiếng đàn/).count(), 'Removed readiness/network notice is still in the UI')
   for (const width of [320, 390, 844, 1440]) {
     await resize({ width, height: width < 700 ? 844 : 800 })
-    if (await popup.isVisible()) await closePopup.click()
+    if (await popup.isVisible()) await dismissPopup()
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `Page overflow at ${width}px`)
     const fullWidth = await page.evaluate(() => {
       const main = document.querySelector('main').getBoundingClientRect()
@@ -112,7 +121,11 @@ async page => {
       const box = document.querySelector('.floating-controls').getBoundingClientRect()
       return box.x >= 7 && box.y >= 7 && box.right <= width - 7 && box.bottom <= innerHeight - 7
     }, width)
-    if (await popup.isVisible()) await closePopup.click()
+    if (await popup.isVisible()) await dismissPopup()
+    // Resizing can leave the piano below a short landscape viewport. The panel
+    // intentionally hides outside the playing area; restore the user's play view.
+    await page.locator('.playing-area').scrollIntoViewIfNeeded()
+    await floating.waitFor({ state: 'visible' })
     const box = await floating.boundingBox()
     assert(box.x >= 7 && box.y >= 7 && box.x + box.width <= width - 7, 'Floating controls exceeded resized viewport')
     const volumeBox = await page.locator('.volume-control').boundingBox()
