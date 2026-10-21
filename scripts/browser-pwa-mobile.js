@@ -9,12 +9,19 @@ async page => {
   assert(await panel.getByRole('button', { name: /tải dữ liệu/i }).count() === 0, 'Download visible despite verified cache and prepared samples')
   const popup = page.getByRole('dialog', { name: 'Xoay ngang màn hình' })
   const resize = async size => {
-    const wasPortrait = await page.evaluate(() => matchMedia('(orientation: portrait) and (max-width: 900px)').matches)
-    await page.setViewportSize(size)
     const isPortrait = size.width <= 900 && size.height >= size.width
-    // CDP viewport changes can precede matchMedia event delivery. Wait for the
-    // actual modal transition before querying roles in its otherwise inert background.
-    if (wasPortrait !== isPortrait) await popup.waitFor({ state: isPortrait ? 'visible' : 'hidden' })
+    const changed = await page.evaluate(expected => {
+      const media = matchMedia('(orientation: portrait) and (max-width: 900px)')
+      const changed = media.matches !== expected
+      window.__pianoOrientationObserved = !changed
+      if (changed) media.addEventListener('change', () => { window.__pianoOrientationObserved = true }, { once: true })
+      return changed
+    }, isPortrait)
+    await page.setViewportSize(size)
+    // A dismissed dialog is already hidden when rotating to landscape. Observe
+    // the media event itself, so that transition completes before another resize.
+    await page.waitForFunction(() => window.__pianoOrientationObserved)
+    if (changed) await popup.waitFor({ state: isPortrait ? 'visible' : 'hidden' })
   }
   await resize({ width: 390, height: 844 })
   const closePopup = page.getByRole('button', { name: 'Đóng lời nhắc xoay ngang' })
