@@ -4,7 +4,9 @@
 
 **[Chơi piano trên trình duyệt →](https://key-flow-piano.vercel.app)**
 
-KeyFlow Piano là dự án cá nhân được phát triển theo phong cách **vibe coding**, với sự hỗ trợ của AI trong quá trình viết và chỉnh sửa code. Dự án được chia sẻ miễn phí để học tập, thử nghiệm và tận hưởng việc chơi nhạc; **không phục vụ kinh doanh hay thu lợi nhuận**.
+KeyFlow Piano mang tiếng grand piano lên trình duyệt, chơi bằng bàn phím QWERTY, chuột hoặc cảm ứng, với khả năng cài đặt dưới dạng PWA.
+
+Đây là dự án cá nhân theo phong cách **vibe coding**, trong đó **AI đóng vai trò chính trong việc triển khai mã nguồn**. Dự án được chia sẻ miễn phí để học tập, thử nghiệm và tận hưởng việc chơi nhạc; **không phục vụ kinh doanh hay thu lợi nhuận**.
 
 ## Tính năng
 
@@ -13,6 +15,11 @@ KeyFlow Piano là dự án cá nhân được phát triển theo phong cách **v
 - Điều chỉnh âm lượng, octave, sustain và sắc thái; lưu các thiết lập trên thiết bị.
 - PWA với dữ liệu offline được kiểm tra integrity và cập nhật theo thao tác của người dùng.
 - Thanh điều khiển kéo thả và lời nhắc xoay ngang trên màn hình nhỏ.
+
+## Ảnh chụp màn hình
+
+- **Desktop — bàn phím và các nút điều khiển:** _Chưa có ảnh; sẽ bổ sung._
+- **Mobile — vùng chơi ở chế độ ngang:** _Chưa có ảnh; sẽ bổ sung._
 
 ## Bắt đầu chơi
 
@@ -28,6 +35,25 @@ KeyFlow Piano là dự án cá nhân được phát triển theo phong cách **v
 **↑/↓** chuyển octave; giữ **Space** để sustain trong vùng chơi. Nhãn phím đi theo octave hiện tại. Ánh xạ dùng vị trí phím vật lý; ký tự in trên bàn phím khác QWERTY có thể khác. Số nốt nhận được đồng thời còn phụ thuộc phần cứng bàn phím.
 
 PWA cần kết nối mạng để tải đầy đủ lần đầu. Chơi offline chỉ khả dụng sau khi cache đủ dữ liệu của bản hiện tại. Việc cài ứng dụng và hỗ trợ trình duyệt tùy nền tảng; độ trễ âm thanh và khả năng tương thích mọi trình duyệt chưa được xác nhận.
+
+## Tech Stack
+
+| Thành phần | Công nghệ |
+| --- | --- |
+| Giao diện & trạng thái | React, TypeScript, Tailwind CSS, Zustand |
+| Âm thanh | Tone.js, Web Audio API, sample Salamander Grand Piano |
+| PWA & cache | vite-plugin-pwa, Workbox, Service Worker, Cache API |
+| Công cụ phát triển | Vite, pnpm, ESLint |
+| Kiểm thử | Vitest, Playwright CLI |
+
+## Kiến trúc
+
+Sự kiện bàn phím và con trỏ gọi trực tiếp audio engine; React hiển thị trạng thái sau đó.
+
+- **Giao diện & đầu vào:** [components](src/components/) và [keyboard](src/features/keyboard/) xử lý phím đàn, các nút điều khiển và ánh xạ vị trí QWERTY vật lý.
+- **Âm thanh:** [audio](src/features/audio/) kiểm tra SHA-256 của sample, giải mã và phát qua `Tone.Sampler`; `VoiceManager` quản lý các nguồn giữ nốt và sustain.
+- **Trạng thái & thiết lập:** [stores](src/stores/) dùng Zustand; [settings](src/features/settings/) lưu âm lượng, octave và sắc thái trong `localStorage`.
+- **PWA:** [service worker](src/sw.ts) và [offline](src/features/offline/) kiểm tra cache ứng dụng/sample và phối hợp cập nhật theo thao tác của người dùng khi không chơi đàn.
 
 ## Chạy trên máy
 
@@ -90,3 +116,7 @@ Các dependencies âm thanh/worker gián tiếp và nguyên văn thông báo cho
 **Âm thanh:** [Salamander Grand Piano](https://github.com/sfzinstruments/SalamanderGrandPiano) của **Alexander Holm**, theo **CC BY 3.0**; bản MP3 web từ [Tone.js audio](https://github.com/Tonejs/audio/tree/master/salamander). Dự án dùng 21 file MP3 không sửa đổi so với bản web nguồn, một lớp dynamic; các nốt còn lại dùng pitch shifting. Xin cảm ơn Alexander Holm và cộng đồng Tone.js. Xem [attribution và nguồn chi tiết](public/samples/salamander/ATTRIBUTION.md).
 
 Mục đích phi lợi nhuận nêu trên mô tả cách tác giả vận hành dự án; giấy phép và quyền của từng thành phần bên thứ ba vẫn được giữ nguyên. Credit không ngụ ý tác giả thư viện hoặc bộ âm thanh bảo trợ dự án.
+
+## Tình trạng giấy phép mã nguồn
+
+Repo hiện chưa có giấy phép riêng cho mã nguồn ứng dụng. [`"private": true`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#private) trong `package.json` chỉ ngăn xuất bản package lên npm; đây không phải giấy phép và không quyết định repo GitHub là public hay private. Mục đích miễn phí, phi thương mại không thay thế [giấy phép mã nguồn](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository). Giấy phép của thư viện, biểu tượng và sample vẫn áp dụng riêng như phần ghi nhận ở trên.
